@@ -270,53 +270,170 @@ class Oauth extends CI_Controller {
         }
     }
 
-    public function get_share_link_form()
-    {
+    public function get_share_link_form() {
         $this->load->view('get_share_link_form');
     }
 
-    public function get_share_link()
-{
-    $access_token = $this->input->post('access_token');
-    $task_id = $this->input->post('task_id');
+    public function get_share_link() {
+        $access_token = $this->input->post('access_token');
+        $task_id = $this->input->post('task_id');
 
-    if (empty($access_token) || empty($task_id)) {
-        $this->session->set_flashdata('error', 'Access token and Task ID are required.');
-        redirect('Oauth/get_share_link_form');
-        return;
-    }
-
-    $client = new \GuzzleHttp\Client();
-
-    try {
-        $response = $client->request('GET', 'https://api.dottedsign.com/v1/sign_tasks/share_link', [
-            'query' => [
-                'task_ids' => $task_id,
-                'expires_in' => 172800
-            ],
-            'headers' => [
-                'Authorization' => 'Bearer ' . $access_token,
-                'Accept' => 'application/json',
-            ],
-        ]);
-
-        $body = json_decode($response->getBody(), true);
-
-        if (!empty($body['data']['share_link'])) {
-            $this->session->set_flashdata('share_link', $body['data']['share_link']);
-        } else {
-            $this->session->set_flashdata('error', 'No share link found in the response.');
+        if (empty($access_token) || empty($task_id)) {
+            $this->session->set_flashdata('error', 'Access token and Task ID are required.');
+            redirect('Oauth/get_share_link_form');
+            return;
         }
 
-    } catch (\GuzzleHttp\Exception\RequestException $e) {
-        $response = $e->hasResponse() ? $e->getResponse() : null;
-        $errorMessage = $response ? json_decode($response->getBody(), true)['message'] ?? 'Request Failed' : 'Request Failed';
-        $this->session->set_flashdata('error', $errorMessage);
-    } catch (Exception $e) {
-        $this->session->set_flashdata('error', 'Invalid Token or Unexpected Error');
+        $client = new \GuzzleHttp\Client();
+
+        try {
+            $response = $client->request('GET', 'https://api.dottedsign.com/v1/sign_tasks/share_link', [
+                'query' => [
+                    'task_ids' => $task_id,
+                    'expires_in' => 172800
+                ],
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $access_token,
+                    'Accept' => 'application/json',
+                ],
+            ]);
+
+            $body = json_decode($response->getBody(), true);
+
+            if (!empty($body['data']['share_link'])) {
+                $this->session->set_flashdata('share_link', $body['data']['share_link']);
+            } else {
+                $this->session->set_flashdata('error', 'No share link found in the response.');
+            }
+
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            $response = $e->hasResponse() ? $e->getResponse() : null;
+            $errorMessage = $response ? json_decode($response->getBody(), true)['message'] ?? 'Request Failed' : 'Request Failed';
+            $this->session->set_flashdata('error', $errorMessage);
+        } catch (Exception $e) {
+            $this->session->set_flashdata('error', 'Invalid Token or Unexpected Error');
+        }
+
+        redirect('Oauth/get_share_link_form');
     }
 
-    redirect('Oauth/get_share_link_form');
-}
+    public function get_audit_trail_form() {
+        $this->load->view('get_audit_trail_form', ['data' => []]);
+    }
+    
+    public function get_audit_trail_result() {
+        $access_token = $this->input->post('access_token');
+        $task_id = $this->input->post('task_id');
+        $page = $this->input->post('page') ?? 1;
+        $per_page = 10;
+    
+        if (empty($access_token) || empty($task_id)) {
+            $this->load->view('get_audit_trail_form', [
+                'data' => ['error' => 'Access token and Task ID are required.']
+            ]);
+            return;
+        }
+    
+        try {
+            $client = new \GuzzleHttp\Client([
+                'timeout' => 30,
+                'connect_timeout' => 5
+            ]);
+    
+            $url = "https://api.dottedsign.com/v1/sign_tasks/audit_trails?page={$page}&per_page={$per_page}&task_id={$task_id}";
+            
+            $response = $client->request('GET', $url, [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . trim($access_token),
+                    'Accept' => 'application/json',
+                ],
+            ]);
+    
+            $responseData = json_decode($response->getBody(), true);
+            
+            // // Debug the response
+            // echo "<pre>";
+            // print_r($responseData);
+            // echo "</pre>";
+            // die();
+    
+            $this->load->view('get_audit_trail_result', ['data' => $responseData]);
+    
+        } catch (Exception $e) {
+            $this->load->view('get_audit_trail_form', [
+                'data' => ['error' => 'An unexpected error occurred: ' . $e->getMessage()]
+            ]);
+        }
+    }
 
+    public function get_task_download_link_form() {
+        $this->load->view('get_task_download_link_form');
+    }
+
+    public function get_task_download_link() {
+        $access_token = $this->input->post('access_token');
+        $task_id = $this->input->post('task_id');
+        $file_type = $this->input->post('file_type');
+
+        if (empty($access_token) || empty($task_id)) {
+            $this->session->set_flashdata('error', 'Access token and Task ID are required.');
+            redirect('Oauth/get_share_link_form');
+            return;
+        }
+
+        $client = new \GuzzleHttp\Client();
+
+        try {
+            $response = $client->request('GET', 'https://api.dottedsign.com/v1/sign_tasks/download_link', [
+                'query' => [
+                    'task_id' => $task_id,
+                    'file_types' => $file_type
+                ],
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $access_token,
+                    'Accept' => 'application/json',
+                ],
+            ]);
+
+            $body = json_decode($response->getBody(), true);
+
+            if (!empty($body['data']['task'])) {
+                // Set task data
+                $this->session->set_flashdata('task', $body['data']['task']);
+        
+                // Check and set attachment data
+                if (!empty($body['data']['task']['attachment'])) {
+                    $this->session->set_flashdata('attachment', $body['data']['task']['attachment']);
+                    
+                    // Check and set compressed attachment data
+                    if (!empty($body['data']['task']['attachment']['attachment_compressed'])) {
+                        $this->session->set_flashdata('attachment_compressed', $body['data']['task']['attachment']['attachment_compressed']);
+                    }
+        
+                    // Check and set audit trail data
+                    if (!empty($body['data']['task']['attachment']['attachment_compressed']['audit_trail'])) {
+                        $this->session->set_flashdata('audit_trail', $body['data']['task']['attachment']['attachment_compressed']['audit_trail']);
+                    }
+                }
+        
+                // Optionally set the share link or any other data you want to display in the UI
+                if (!empty($body['data']['task']['attachment']['attachment_compressed']['share_link'])) {
+                    $this->session->set_flashdata('share_link', $body['data']['task']['attachment']['attachment_compressed']['share_link']);
+                } else {
+                    $this->session->set_flashdata('error', 'No other link found in the response.');
+                }
+            } else {
+                $this->session->set_flashdata('error', 'Data not found in the response.');
+            }
+        
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            $response = $e->hasResponse() ? $e->getResponse() : null;
+            $errorMessage = $response ? json_decode($response->getBody(), true)['message'] ?? 'Request Failed' : 'Request Failed';
+            $this->session->set_flashdata('error', $errorMessage);
+        } catch (Exception $e) {
+            $this->session->set_flashdata('error', 'Invalid Token or Unexpected Error');
+        }
+        
+        redirect('Oauth/get_task_download_link_form');
+    }
 }

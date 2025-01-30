@@ -73,3 +73,10 @@ $route['read_task_result'] = 'Oauth/read_task_result';
 
 $route['get_share_link_form'] = 'Oauth/get_share_link_form';
 $route['get_share_link'] = 'Oauth/get_share_link';
+
+$route['get_audit_trail_form'] = 'Oauth/get_audit_trail_form';
+$route['get_audit_trail'] = 'Oauth/get_audit_trail';
+$route['get_audit_trail_result'] = 'Oauth/get_audit_trail_result';
+
+$route['get_task_download_link_form'] = 'Oauth/get_task_download_link_form';
+$route['get_task_download_link'] = 'Oauth/get_task_download_link';
