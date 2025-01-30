@@ -171,7 +171,7 @@ class Oauth extends CI_Controller {
                     }]
                 }',
                 'headers' => [
-                    'Authorization' => 'Bearer ZgDuB1dmCxGL1gJbwE4L4yRRwhDM2Oa9TMIjxWp_BD0',
+                    'Authorization' => 'Bearer ' . $access_token,
                     'accept' => 'application/json',
                     'content-type' => 'application/json',
                 ],
