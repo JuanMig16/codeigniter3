@@ -204,32 +204,47 @@ class Oauth extends CI_Controller {
         $this->load->view('get_template_result');
     }
 
-    public function get_template () {
+    public function get_template() {
         $access_token = $this->input->post('access_token');
         $this->session->set_tempdata('access_token', $access_token, 30);
-
+    
         $client = new \GuzzleHttp\Client();
-
+    
         try {
             $response = $client->request('GET', 'https://api.dottedsign.com/v1/templates/list?page=1&per_page=10&order_by=desc&sort_type=updated_at', [
                 'headers' => [
-                  'Authorization' => 'Bearer ' . $access_token,
-                  'accept' => 'application/json',
+                    'Authorization' => 'Bearer ' . $access_token,
+                    'accept' => 'application/json',
                 ],
-              ]);
-              
-            echo $response->getBody();
-
-            $body = $response->getBody();
-            $data = json_decode($body, true);
-
-            $this->load->view('get_template_result', ['data' => $data['data']]);
-
+            ]);
+        
+            $body = $response->getBody()->getContents(); // Get the response contents
+            $result = json_decode($body, true); // Decode JSON to array
+            
+            // Debug the response
+            error_log('API Response: ' . print_r($result, true));
+            
+            // Check if we have valid data
+            if (!isset($result) || !is_array($result)) {
+                throw new Exception('Invalid response format');
+            }
+            
+            // Pass data to view
+            $viewData = array(
+                'templates_data' => $result // Rename to avoid confusion with CI's $data variable
+            );
+            
+            $this->load->view('get_template_result', $viewData);
+    
         } catch (\GuzzleHttp\Exception\RequestException $e) {
+            // Log the error
+            error_log('Request Exception: ' . $e->getMessage());
             $this->session->set_flashdata('error', 'Request Failed: ' . $e->getMessage());
             redirect('Oauth/get_template_form');
         } catch (Exception $e) {
-            $this->session->set_flashdata('error', 'Invalid Token');
+            // Log the error
+            error_log('General Exception: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Invalid Token or Response');
             redirect('Oauth/get_template_form');
         }
     }

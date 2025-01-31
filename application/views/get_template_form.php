@@ -16,7 +16,7 @@
                         <h2>Get Template</h2>
                     </div>
                     <div class="card-body">
-                        <form action="<?= site_url('Oauth/get_template_result') ?>" method="POST">
+                        <form action="<?= site_url('Oauth/get_template') ?>" method="POST">
                             <div class="mb-3">
                                 <label for="access_token" class="form-label">Enter Access Token:</label>
                                 <input type="text" class="form-control" id="access_token" name="access_token" required>
