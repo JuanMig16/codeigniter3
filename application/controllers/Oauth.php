@@ -19,18 +19,48 @@ class Oauth extends CI_Controller {
             return;
         }
     
+        // Get all possible parameters from the form
         $grant_type = $this->input->post('grant_type');
         $client_id = $this->input->post('client_id');
         $client_secret = $this->input->post('client_secret');
+        $code = $this->input->post('code');
+        // $scope = $this->input->post('scope');
+        $redirect_uri = $this->input->post('redirect_uri');
+        $refresh_token = $this->input->post('refresh_token');
     
-        $client = new Client();
-    
+        // Initialize the base data array with required fields
         $data = [
             'grant_type' => $grant_type,
             'client_id' => $client_id,
             'client_secret' => $client_secret,
-            'scope' => 'third_party sign_tasks.general.read sign_tasks.general.write',
         ];
+    
+        // Add additional parameters based on grant type
+        switch ($grant_type) {
+            // case 'client_credentials':
+            //     // Add scope for client credentials
+            //     $data['scope'] = !empty($scope) ? $scope : 'third_party sign_tasks.general.read sign_tasks.general.write';
+            //     break;
+    
+            case 'authorization_code':
+                // Add required fields for authorization code grant
+                if (!empty($code)) {
+                    $data['code'] = $code;
+                }
+                if (!empty($redirect_uri)) {
+                    $data['redirect_uri'] = $redirect_uri;
+                }
+                break;
+    
+            case 'refresh_token':
+                // Add refresh token if provided
+                if (!empty($refresh_token)) {
+                    $data['refresh_token'] = $refresh_token;
+                }
+                break;
+        }
+    
+        $client = new Client();
     
         try {
             $response = $client->request('POST', 'https://api.dottedsign.com/v1/oauth/token', [
@@ -51,8 +81,19 @@ class Oauth extends CI_Controller {
             redirect('Oauth/create_token');
     
         } catch (\GuzzleHttp\Exception\RequestException $e) {
-            // Handle API request error
-            $error_message = 'Request Failed: ' . $e->getMessage();
+            // Get the response body if available
+            $response = $e->getResponse();
+            $error_message = 'Request Failed: ';
+            
+            if ($response) {
+                $error_body = json_decode($response->getBody(), true);
+                $error_message .= isset($error_body['error_description']) 
+                    ? $error_body['error_description'] 
+                    : $e->getMessage();
+            } else {
+                $error_message .= $e->getMessage();
+            }
+    
             $this->session->set_flashdata('error', $error_message);
     
             // Redirect back to form with error
